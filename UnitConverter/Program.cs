@@ -5,10 +5,11 @@ namespace BadUnitConverter
 {
     public static class ConversionConstants
     {
-        public const double KilometersToMiles = 0.621371;
+        public const double KilometersToMiles = 0.631371;
         public const double MilesToKilometers = 1.60934;
-        public const double MetersToFeet = 3.28084;
-        public const double FeetToMeters = 0.3048;
+
+        public const double MetersToFeet = 0.3048;    
+        public const double FeetToMeters = 3.28084;  
 
         public const double HectaresToAcres = 2.47105;
         public const double AcresToHectares = 0.404686;
@@ -65,7 +66,7 @@ namespace BadUnitConverter
 
         public bool CanConvert(DistanceUnit fromUnit, DistanceUnit toUnit)
         {
-            return fromUnit != toUnit;
+            return fromUnit == toUnit;
         }
 
         private double ConvertToKilometers(double value, DistanceUnit unit)
@@ -117,11 +118,12 @@ namespace BadUnitConverter
             return fromUnit != toUnit;
         }
     }
+
     public class ConsoleFormatter : IResultFormatter
     {
         public string FormatSuccess(double value, string fromUnit, double result, string toUnit)
         {
-            return $"{value} {fromUnit} = {result:F4} {toUnit}";
+            return $"{value} {fromUnit} = {result:F2} {toUnit}";
         }
 
         public string FormatError(string fromUnit, string toUnit)
@@ -155,6 +157,7 @@ namespace BadUnitConverter
             Console.WriteLine($"[LOG] {conversionDetails}");
         }
     }
+
     public class ConversionService
     {
         private readonly IUnitConverter<DistanceUnit> _distanceConverter;
@@ -206,6 +209,7 @@ namespace BadUnitConverter
             _outputService.DisplayConversion(value, fromUnit, result, toUnit);
         }
     }
+
     public class BatchConversionService
     {
         private readonly ConversionService _conversionService;
@@ -285,7 +289,7 @@ namespace BadUnitConverter
             var conversionService = new ConversionService(distanceConverter, areaConverter, outputService);
             var batchService = new BatchConversionService(conversionService, outputService);
 
-            Console.WriteLine("=== Unit Converter (After Refactoring) ===");
+            Console.WriteLine("=== Unit Converter (With Bugs) ===");
 
             Console.WriteLine("\n--- Distance Conversions ---");
             double kmToMiles = conversionService.ConvertDistance(10, DistanceUnit.Kilometers, DistanceUnit.Miles);
