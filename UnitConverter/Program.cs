@@ -3,21 +3,25 @@ using System.Collections.Generic;
 
 namespace BadUnitConverter
 {
+    // Константы для преобразований
     public static class ConversionConstants
     {
-        public const double KilometersToMiles = 0.631371;
+        // Коэффициенты преобразования расстояний
+        public const double KilometersToMiles = 0.621371;
         public const double MilesToKilometers = 1.60934;
+        public const double MetersToFeet = 3.28084;
+        public const double FeetToMeters = 0.3048;
 
-        public const double MetersToFeet = 0.3048;    
-        public const double FeetToMeters = 3.28084;  
-
+        // Коэффициенты преобразования площадей
         public const double HectaresToAcres = 2.47105;
         public const double AcresToHectares = 0.404686;
 
+        // Общие константы
         public const int MetersInKilometer = 1000;
         public const int DecimalPrecision = 4;
     }
 
+    // Перечисления для типобезопасности
     public enum DistanceUnit
     {
         Kilometers,
@@ -32,11 +36,13 @@ namespace BadUnitConverter
         Acres
     }
 
+    // Исключения для обработки ошибок
     public class InvalidConversionException : Exception
     {
         public InvalidConversionException(string message) : base(message) { }
     }
 
+    // Интерфейсы для соблюдения OCP
     public interface IUnitConverter<T>
     {
         double Convert(double value, T fromUnit, T toUnit);
@@ -49,6 +55,7 @@ namespace BadUnitConverter
         string FormatError(string fromUnit, string toUnit);
     }
 
+    // Специализированные конвертеры
     public class DistanceConverter : IUnitConverter<DistanceUnit>
     {
         public double Convert(double value, DistanceUnit fromUnit, DistanceUnit toUnit)
@@ -66,7 +73,7 @@ namespace BadUnitConverter
 
         public bool CanConvert(DistanceUnit fromUnit, DistanceUnit toUnit)
         {
-            return fromUnit == toUnit;
+            return fromUnit != toUnit;
         }
 
         private double ConvertToKilometers(double value, DistanceUnit unit)
@@ -119,11 +126,12 @@ namespace BadUnitConverter
         }
     }
 
+    // Сервис форматирования
     public class ConsoleFormatter : IResultFormatter
     {
         public string FormatSuccess(double value, string fromUnit, double result, string toUnit)
         {
-            return $"{value} {fromUnit} = {result:F2} {toUnit}";
+            return $"{value} {fromUnit} = {result:F4} {toUnit}";
         }
 
         public string FormatError(string fromUnit, string toUnit)
@@ -132,6 +140,7 @@ namespace BadUnitConverter
         }
     }
 
+    // Сервис вывода
     public class OutputService
     {
         private readonly IResultFormatter _formatter;
@@ -152,12 +161,18 @@ namespace BadUnitConverter
             Console.WriteLine($"Error: {errorMessage}");
         }
 
+        public void DisplayMessage(string message)
+        {
+            Console.WriteLine(message);
+        }
+
         public void LogConversion(string conversionDetails)
         {
             Console.WriteLine($"[LOG] {conversionDetails}");
         }
     }
 
+    // Основной сервис конвертации
     public class ConversionService
     {
         private readonly IUnitConverter<DistanceUnit> _distanceConverter;
@@ -210,6 +225,7 @@ namespace BadUnitConverter
         }
     }
 
+    // Сервис пакетной обработки
     public class BatchConversionService
     {
         private readonly ConversionService _conversionService;
@@ -239,9 +255,9 @@ namespace BadUnitConverter
                                 double result = _conversionService.ConvertDistance(value, sourceUnit, targetUnit);
                                 _outputService.DisplayConversion(value, sourceUnit.ToString(), result, targetUnit.ToString());
                             }
-                            catch (InvalidConversionException)
+                            catch (InvalidConversionException ex)
                             {
-                                
+                                _outputService.DisplayError($"Failed to convert {value} {sourceUnit} to {targetUnit}: {ex.Message}");
                             }
                         }
                     }
@@ -267,9 +283,9 @@ namespace BadUnitConverter
                                 double result = _conversionService.ConvertArea(value, sourceUnit, targetUnit);
                                 _outputService.DisplayConversion(value, sourceUnit.ToString(), result, targetUnit.ToString());
                             }
-                            catch (InvalidConversionException)
+                            catch (InvalidConversionException ex)
                             {
-                                
+                                _outputService.DisplayError($"Failed to convert {value} {sourceUnit} to {targetUnit}: {ex.Message}");
                             }
                         }
                     }
@@ -278,10 +294,59 @@ namespace BadUnitConverter
         }
     }
 
+    // Валидатор тестов
+    public class TestValidator
+    {
+        public static void RunTests(ConversionService conversionService, OutputService outputService)
+        {
+            outputService.DisplayMessage("=== Running Tests ===");
+
+            // Тест 1: 10 km → miles
+            try
+            {
+                double result1 = conversionService.ConvertDistance(10, DistanceUnit.Kilometers, DistanceUnit.Miles);
+                bool test1Passed = Math.Abs(result1 - 6.2137) < 0.001;
+                outputService.DisplayMessage($"Test 1 (10km→miles): {result1:F4} - {(test1Passed ? "PASS" : "FAIL")}");
+            }
+            catch (Exception ex)
+            {
+                outputService.DisplayError($"Test 1 FAILED: {ex.Message}");
+            }
+
+            // Тест 2: 100 meters → feet
+            try
+            {
+                double result2 = conversionService.ConvertDistance(100, DistanceUnit.Meters, DistanceUnit.Feet);
+                bool test2Passed = Math.Abs(result2 - 328.0840) < 0.001;
+                outputService.DisplayMessage($"Test 2 (100m→feet): {result2:F4} - {(test2Passed ? "PASS" : "FAIL")}");
+            }
+            catch (Exception ex)
+            {
+                outputService.DisplayError($"Test 2 FAILED: {ex.Message}");
+            }
+
+            // Тест 3: 2 hectares → acres
+            try
+            {
+                double result3 = conversionService.ConvertArea(2, AreaUnit.Hectares, AreaUnit.Acres);
+                bool test3Passed = Math.Abs(result3 - 4.9421) < 0.001;
+                outputService.DisplayMessage($"Test 3 (2ha→acres): {result3:F4} - {(test3Passed ? "PASS" : "FAIL")}");
+            }
+            catch (Exception ex)
+            {
+                outputService.DisplayError($"Test 3 FAILED: {ex.Message}");
+            }
+
+            outputService.DisplayMessage("=== Tests Completed ===");
+        }
+    }
+
+    // Демонстрационная программа
     class Program
     {
         static void Main(string[] args)
         {
+            // Настройка зависимостей
             var distanceConverter = new DistanceConverter();
             var areaConverter = new AreaConverter();
             var formatter = new ConsoleFormatter();
@@ -289,8 +354,12 @@ namespace BadUnitConverter
             var conversionService = new ConversionService(distanceConverter, areaConverter, outputService);
             var batchService = new BatchConversionService(conversionService, outputService);
 
-            Console.WriteLine("=== Unit Converter (With Bugs) ===");
+            Console.WriteLine("=== Unit Converter (Fixed Version) ===");
 
+            // Запуск тестов
+            TestValidator.RunTests(conversionService, outputService);
+
+            // Примеры одиночных конвертаций
             Console.WriteLine("\n--- Distance Conversions ---");
             double kmToMiles = conversionService.ConvertDistance(10, DistanceUnit.Kilometers, DistanceUnit.Miles);
             conversionService.DisplayFormattedConversion(10, "km", kmToMiles, "miles");
@@ -302,6 +371,7 @@ namespace BadUnitConverter
             double hectaresToAcres = conversionService.ConvertArea(2, AreaUnit.Hectares, AreaUnit.Acres);
             conversionService.DisplayFormattedConversion(2, "hectares", hectaresToAcres, "acres");
 
+            // Пакетная обработка
             Console.WriteLine("\n--- Batch Processing ---");
             Console.WriteLine("Processing distance conversions...");
             batchService.ProcessDistanceConversions();
